@@ -1045,21 +1045,19 @@ async function logToSheets(id, silent = false) {
         docContent: job.tailoredResume,
         row
       }));
-      const resp = await fetch(appsScriptUrl, {
-        method: 'POST',
-        body: formData
-      });
-      const text = await resp.text();
       try {
-        const result = JSON.parse(text);
-        if (result.url) {
-          job.resumeDocUrl = result.url;
-          saveJobs();
-          selectJob(job.id);
-        }
-      } catch(e) {}
-      if (!silent) showToast('Logged to Sheets + resume saved to Drive!', 'success');
-      else showToast('Applied! Resume doc created in Drive.', 'success');
+        const resp = await fetch(appsScriptUrl, { method: 'POST', body: formData });
+        const text = await resp.text();
+        try {
+          const result = JSON.parse(text);
+          if (result.url) { job.resumeDocUrl = result.url; saveJobs(); selectJob(job.id); }
+        } catch(parseErr) { console.log('parse err:', parseErr, 'raw:', text); }
+        if (!silent) showToast('Logged to Sheets + resume saved to Drive!', 'success');
+        else showToast('Applied! Resume doc created in Drive.', 'success');
+      } catch(fetchErr) {
+        console.log('appendWithDoc fetch error:', fetchErr);
+        if (!silent) showToast('Drive doc failed: ' + fetchErr.message, 'error');
+      }
     } else {
       const formData = new FormData();
       formData.append('data', JSON.stringify({ action: 'append', row }));
