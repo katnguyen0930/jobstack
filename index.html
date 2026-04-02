@@ -927,6 +927,15 @@ async function tailorResume(id) {
   btn.disabled = true;
   btn.textContent = '⏳ Tailoring…';
 
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    showToast('Please add your Anthropic API key in Setup → API Key first', 'error');
+    switchTab('apikey');
+    btn.disabled = false;
+    btn.textContent = '✦ Tailor Resume for this Role';
+    return;
+  }
+
   try {
     const prompt = `You are an expert resume writer and career coach. I need you to tailor a resume for a specific job posting.
 
