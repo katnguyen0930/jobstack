@@ -1034,45 +1034,15 @@ async function logToSheets(id, silent = false) {
   ];
 
   try {
-    // If we have a tailored resume and a folder ID, create the doc and log together
-    if (job.tailoredResume && folderId) {
-      if (!silent) showToast('Creating resume doc in Drive…', '');
-      const docTitle = `Resume — ${job.role} at ${job.company} (${job.appliedDate || 'Draft'})`;
-      const resp = await fetch(appsScriptUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({
-          action: 'appendWithDoc',
-          folderId,
-          docTitle,
-          docContent: job.tailoredResume,
-          row
-        })
-      });
-      const result = await resp.json();
-      if (result.status === 'ok') {
-        job.resumeDocUrl = result.url;
-        saveJobs();
-        if (!silent) showToast('Logged to Sheets + resume saved to Drive!', 'success');
-        else showToast('Applied! Resume doc created in Drive.', 'success');
-      } else {
-        throw new Error(result.message || 'Unknown error');
-      }
-    } else {
-      // No resume or no folder — just append the row
-      await fetch(appsScriptUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'append', row })
-      });
-      if (!silent) showToast('Logged to Google Sheets!', 'success');
-      if (!folderId && job.tailoredResume && !silent) {
-        showToast('Tip: add a Drive Folder ID in Setup → Sheets to auto-save resumes', '');
-      }
-    }
+    const formData = new FormData();
+    formData.append('data', JSON.stringify({ action: 'append', row }));
+    const resp = await fetch(appsScriptUrl, {
+      method: 'POST',
+      body: formData
+    });
+    if (!silent) showToast('Logged to Google Sheets!', 'success');
   } catch(err) {
     if (!silent) showToast('Sheets log failed: ' + err.message, 'error');
-    else showToast('Sheets log failed — check your Apps Script URL', 'error');
   }
 }
 
