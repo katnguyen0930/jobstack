@@ -1034,13 +1034,44 @@ async function logToSheets(id, silent = false) {
   ];
 
   try {
-    const formData = new FormData();
-    formData.append('data', JSON.stringify({ action: 'append', row }));
-    const resp = await fetch(appsScriptUrl, {
-      method: 'POST',
-      body: formData
-    });
-    if (!silent) showToast('Logged to Google Sheets!', 'success');
+    if (job.tailoredResume && folderId) {
+      if (!silent) showToast('Saving resume to Drive and logging…', '');
+      const docTitle = `Resume — ${job.role} at ${job.company} (${job.appliedDate || 'Draft'})`;
+      const formData = new FormData();
+      formData.append('data', JSON.stringify({
+        action: 'appendWithDoc',
+        folderId,
+        docTitle,
+        docContent: job.tailoredResume,
+        row
+      }));
+      const resp = await fetch(appsScriptUrl, {
+        method: 'POST',
+        body: formData
+      });
+      const text = await resp.text();
+      try {
+        const result = JSON.parse(text);
+        if (result.url) {
+          job.resumeDocUrl = result.url;
+          saveJobs();
+          selectJob(job.id);
+        }
+      } catch(e) {}
+      if (!silent) showToast('Logged to Sheets + resume saved to Drive!', 'success');
+      else showToast('Applied! Resume doc created in Drive.', 'success');
+    } else {
+      const formData = new FormData();
+      formData.append('data', JSON.stringify({ action: 'append', row }));
+      await fetch(appsScriptUrl, {
+        method: 'POST',
+        body: formData
+      });
+      if (!silent) showToast('Logged to Google Sheets!', 'success');
+      if (!folderId && job.tailoredResume && !silent) {
+        showToast('Tip: add a Drive Folder ID in Setup → Sheets to auto-save resumes', '');
+      }
+    }
   } catch(err) {
     if (!silent) showToast('Sheets log failed: ' + err.message, 'error');
   }
